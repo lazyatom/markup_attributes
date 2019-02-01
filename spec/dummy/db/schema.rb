@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_01_31_173158) do
+ActiveRecord::Schema.define(version: 2019_02_01_155355) do
 
   create_table "basic_model_translations", force: :cascade do |t|
     t.integer "basic_model_id", null: false
@@ -27,6 +27,7 @@ ActiveRecord::Schema.define(version: 2019_01_31_173158) do
     t.string "body"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "summary"
   end
 
 end
