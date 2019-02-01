@@ -45,11 +45,17 @@ module MarkupAttributes
   # The type used by ActiveRecord's attributes API
   # @private
   class MarkupType < ActiveRecord::Type::String
-    attr_accessor :markup_options
+    def self.inspect
+      "<MarkupType [#{markup_options}]>"
+    end
+
+    def markup_options
+      self.class.markup_options
+    end
 
     def cast(value)
-      if value.is_a?(String)
-        MarkupString.new(value).tap { |s| s.markup_options = markup_options }
+      if value.is_a?(String) || value.is_a?(MarkupString)
+        MarkupString.new(value).tap { |s| s.markup_options = self.markup_options }
       else
         super
       end
@@ -93,15 +99,39 @@ module MarkupAttributes
     options.deep_symbolize_keys!
     options[:allow] = Array.wrap(options[:allow] || :all).map(&:to_sym)
     options[:deny] = Array.wrap(options[:deny]).map(&:to_sym)
+    options.freeze
+
+    attribute_registry_type = get_type_for(options)
 
     attribute_names.each do |attribute_name|
       if respond_to?(:translates?) && translates? && translated_attribute_names.include?(attribute_name)
-        translation_class.attribute attribute_name, :markup
-        translation_class.attribute_types[attribute_name.to_s].markup_options = options
+        translation_class.attribute attribute_name, attribute_registry_type
       else
-        attribute attribute_name, :markup
-        attribute_types[attribute_name.to_s].markup_options = options
+        attribute attribute_name, attribute_registry_type
       end
     end
+  end
+
+  private
+
+  MARKUP_TYPES_REGISTRY = {}
+
+  def get_type_for(options)
+    allow_keys = options[:allow].map { |x| "+#{x}" }
+    deny_keys = options[:deny].map { |x| "-#{x}" }
+    type_key = [options[:markup],(allow_keys + deny_keys).sort.join].join('=>').to_sym
+    MARKUP_TYPES_REGISTRY.fetch(type_key) do
+      klass = eval <<-TYPE_CLASS
+        Class.new(MarkupType) do
+          def self.markup_options
+            #{options.inspect}
+          end
+        end
+      TYPE_CLASS
+      ActiveRecord::Type.register(type_key, klass)
+      MARKUP_TYPES_REGISTRY[type_key] = klass
+      klass
+    end
+    type_key
   end
 end

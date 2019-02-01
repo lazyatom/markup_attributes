@@ -132,4 +132,39 @@ RSpec.describe MarkupAttributesHelper do
       end
     end
   end
+
+  describe 'with multiple classes' do
+    class FirstModel < BasicModel
+      textile_attribute :body, allow: :emphasis
+    end
+
+    class SecondModel < BasicModel
+      textile_attribute :body, allow: :links
+    end
+
+    it 'keeps configuration for each attribute distinct' do
+      first = FirstModel.new(body: 'foo')
+      second = SecondModel.new(body: 'bar')
+
+      expect(first.body.markup_options).to eq(markup: :textile, allow: [:emphasis], deny: [])
+      expect(second.body.markup_options).to eq(markup: :textile, allow: [:links], deny: [])
+    end
+  end
+
+  describe 'with multiple attributes in a single model' do
+    class SimpleModel < BasicModel
+      textile_attribute :body, :summary
+    end
+
+    before do
+      SimpleModel.create!(body: 'some text', summary: 'whatever')
+    end
+
+    it 'retains markup options even while ActiveRecord reloads' do
+      byebug
+      record = SimpleModel.first
+      expect(record.body.markup_options).not_to be_nil
+      expect(record.summary.markup_options).not_to be_nil
+    end
+  end
 end
