@@ -49,9 +49,7 @@ module MarkupAttributes
       "<MarkupType [#{markup_options}]>"
     end
 
-    def markup_options
-      self.class.markup_options
-    end
+    class_attribute :markup_options, instance_writer: false, instance_predicate: false
 
     def cast(value)
       if value.is_a?(String) || value.is_a?(MarkupString)
@@ -121,13 +119,8 @@ module MarkupAttributes
     deny_keys = options[:deny].map { |x| "-#{x}" }
     type_key = [options[:markup],(allow_keys + deny_keys).sort.join].join('=>').to_sym
     MARKUP_TYPES_REGISTRY.fetch(type_key) do
-      klass = Class.new(MarkupType) do
-        class_eval do
-          define_method(:markup_options) do
-            options
-          end
-        end
-      end
+      klass = Class.new(MarkupType)
+      klass.markup_options = options
       ActiveRecord::Type.register(type_key, klass)
       MARKUP_TYPES_REGISTRY[type_key] = klass
       klass
