@@ -121,13 +121,13 @@ module MarkupAttributes
     deny_keys = options[:deny].map { |x| "-#{x}" }
     type_key = [options[:markup],(allow_keys + deny_keys).sort.join].join('=>').to_sym
     MARKUP_TYPES_REGISTRY.fetch(type_key) do
-      klass = eval <<-TYPE_CLASS
-        Class.new(MarkupType) do
-          def self.markup_options
-            #{options.inspect}
+      klass = Class.new(MarkupType) do
+        class_eval do
+          define_method(:markup_options) do
+            options
           end
         end
-      TYPE_CLASS
+      end
       ActiveRecord::Type.register(type_key, klass)
       MARKUP_TYPES_REGISTRY[type_key] = klass
       klass
