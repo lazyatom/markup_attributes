@@ -28,7 +28,7 @@ module MarkupAttributesHelper
       html = case options[:markup]
       when :textile
         require 'redcloth'
-        RedCloth.new(sanitize(markup_attribute), [:no_span_caps]).to_html
+        RedCloth.new(sanitize_using_app(markup_attribute), [:no_span_caps]).to_html
       else
         raise "unknown markup attribute type: #{options[:markup]}"
       end
@@ -62,5 +62,15 @@ module MarkupAttributesHelper
     tags += %w(a) if tag_types.include?(:links)
     tags += %w(img) if tag_types.include?(:images)
     tags
+  end
+
+  def sanitize_using_app(string)
+    if respond_to?(:sanitize)
+      sanitize(string)
+    elsif ActionView::Base.respond_to?(:white_list_sanitizer)
+      ActionView::Base.white_list_sanitizer.sanitize(string)
+    else
+      raise "I don't know how to sanitize content, none of my expected ways will work."
+    end
   end
 end
