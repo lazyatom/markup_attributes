@@ -1,4 +1,8 @@
 language: ruby
+script:
+  - bundle exec rake db:create
+  - bundle exec rake db:schema:load
+  - bundle exec rake
 rvm:
   - 2.6
   - 2.5
